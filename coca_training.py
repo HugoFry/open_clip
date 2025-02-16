@@ -16,9 +16,9 @@ import logging
 from PIL import Image
 from torch.utils.data import Dataset
 import sys
-sys.path.append('/root/open_clip_local/src/open_clip_train/')
-from data import get_data
-import open_clip_train.data
+sys.path.append('/root/open_clip_local/src/')
+from open_clip_train.data import get_data
+import open_clip_train
 
 class TarCsvDataset(Dataset):
     def __init__(self, input_filename, transforms, img_key, caption_key, sep="\t", tokenizer=None):
