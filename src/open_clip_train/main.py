@@ -15,7 +15,7 @@ from torch import optim
 
 try:
     import wandb
-except ImportError:
+except ImportError: 
     wandb = None
 
 try:
