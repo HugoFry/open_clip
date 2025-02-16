@@ -85,17 +85,19 @@ def process_tar_file(tar_path):
     
     return data
 
-def create_webdataset(dataset, output_dir):
+def create_webdataset(dataset, output_dir, split):
     """Convert HuggingFace dataset to WebDataset format"""
     os.makedirs(output_dir, exist_ok=True)
     
     # Create shards of 1000 samples each
     samples_per_shard = 1000
-    for shard_idx in tqdm(range(0, len(dataset['test']), samples_per_shard)):
-        with wds.TarWriter(f"{output_dir}/test_shard_{shard_idx:06d}.tar") as dst:
-            end_idx = min(shard_idx + samples_per_shard, len(dataset['test']))
+    split_data = dataset[split]
+    
+    for shard_idx in tqdm(range(0, len(split_data), samples_per_shard), desc=f"Creating {split} webdataset"):
+        with wds.TarWriter(f"{output_dir}/{split}_shard_{shard_idx:06d}.tar") as dst:
+            end_idx = min(shard_idx + samples_per_shard, len(split_data))
             for idx in range(shard_idx, end_idx):
-                item = dataset['test'][idx]
+                item = split_data[idx]
                 image = item['image']
                 text = item['text']
                 
@@ -106,10 +108,9 @@ def create_webdataset(dataset, output_dir):
                     "txt": text.encode('utf-8')
                 })
 
-def create_test_csv_mapping():
-    test_dir = 'chest_xray_webdataset_test'
-    tar_files = [os.path.join(test_dir, f) 
-                 for f in sorted(os.listdir(test_dir)) 
+def create_csv_mapping(data_dir, split):
+    tar_files = [os.path.join(data_dir, f) 
+                 for f in sorted(os.listdir(data_dir)) 
                  if f.endswith('.tar')]
     
     # Use number of CPU cores for parallelization
@@ -121,33 +122,47 @@ def create_test_csv_mapping():
     
     # Create DataFrame and save
     df = pd.DataFrame(flat_data)
-    df.to_csv('test_mapping.csv', index=False)
-    print(f"Processed {len(flat_data)} test image-text pairs")
+    output_file = f'{split}_mapping.csv'
+    df.to_csv(output_file, index=False)
+    print(f"Processed {len(flat_data)} {split} image-text pairs")
+    return output_file
 
 def main():
-    # # Load dataset
-    # dataset = load_dataset("sae-rad/MIMIC_chexpert_padchest_clip")
-    # print("Dataset loaded")
-    # print(f"Test set size: {len(dataset['test'])}")
+    # Load dataset
+    print("Loading dataset...")
+    dataset = load_dataset("sae-rad/MIMIC_chexpert_padchest_clip")
+    print("Dataset loaded")
+    print(f"Train set size: {len(dataset['train'])}")
+    print(f"Test set size: {len(dataset['test'])}")
     
-    # # Create test webdataset
-    # print("Creating test webdataset...")
-    # create_webdataset(dataset, 'chest_xray_webdataset_test')
+    # Create output directories
+    train_dir = 'chest_xray_webdataset_train'
+    test_dir = 'chest_xray_webdataset_test'
     
-    # # Create test CSV mapping
-    # print("Creating test CSV mapping...")
-    # create_test_csv_mapping()
+    # Create train and test webdatasets
+    print("Creating train webdataset...")
+    create_webdataset(dataset, train_dir, 'train')
+    
+    print("Creating test webdataset...")
+    create_webdataset(dataset, test_dir, 'test')
+    
+    # Create CSV mappings
+    print("Creating train CSV mapping...")
+    train_csv = create_csv_mapping(train_dir, 'train')
+    
+    print("Creating test CSV mapping...")
+    test_csv = create_csv_mapping(test_dir, 'test')
     
     # Get dataset sizes
-    train_df = pd.read_csv('/root/dataset_mapping.csv')
-    test_df = pd.read_csv('test_mapping.csv')
+    train_df = pd.read_csv(train_csv)
+    test_df = pd.read_csv(test_csv)
     
     # Training arguments
     args = [
         '--model', 'coca_ViT-L-14',
         '--pretrained', 'laion2B-s13B-b90k',
-        '--train-data', '/root/dataset_mapping.csv',
-        '--val-data', 'test_mapping.csv',
+        '--train-data', train_csv,
+        '--val-data', test_csv,
         '--train-num-samples', str(len(train_df)),
         '--val-num-samples', str(len(test_df)),
         '--dataset-type', 'csv',
