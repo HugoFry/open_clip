@@ -183,10 +183,11 @@ def main(create_data: bool = False):
         '--precision', 'amp',
         '--report-to', 'wandb',
         '--wandb-project-name', 'coca-chest-xray',
-        '--name', 'coca-finetune',
+        '--name', 'coca-finetune-v2',
         '--wandb-notes', 'Finetuning CoCa on chest x-ray images',
         '--log-every-n-steps', '100',
-        '--save-frequency', '5',
+        '--save-frequency', '2',
+        '--save-most-recent',
         '--val-frequency', '1',
         '--zeroshot-frequency', '0',
         '--logs', './logs'
