@@ -127,31 +127,35 @@ def create_csv_mapping(data_dir, split):
     print(f"Processed {len(flat_data)} {split} image-text pairs")
     return output_file
 
-def main():
-    # Load dataset
-    print("Loading dataset...")
-    dataset = load_dataset("sae-rad/MIMIC_chexpert_padchest_clip")
-    print("Dataset loaded")
-    print(f"Train set size: {len(dataset['train'])}")
-    print(f"Test set size: {len(dataset['test'])}")
-    
-    # Create output directories
-    train_dir = 'chest_xray_webdataset_train'
-    test_dir = 'chest_xray_webdataset_test'
-    
-    # Create train and test webdatasets
-    print("Creating train webdataset...")
-    create_webdataset(dataset, train_dir, 'train')
-    
-    print("Creating test webdataset...")
-    create_webdataset(dataset, test_dir, 'test')
-    
-    # Create CSV mappings
-    print("Creating train CSV mapping...")
-    train_csv = create_csv_mapping(train_dir, 'train')
-    
-    print("Creating test CSV mapping...")
-    test_csv = create_csv_mapping(test_dir, 'test')
+def main(create_data: bool = False):
+    if create_data:
+        # Load dataset
+        print("Loading dataset...")
+        dataset = load_dataset("sae-rad/MIMIC_chexpert_padchest_clip")
+        print("Dataset loaded")
+        print(f"Train set size: {len(dataset['train'])}")
+        print(f"Test set size: {len(dataset['test'])}")
+        
+        # Create output directories
+        train_dir = 'chest_xray_webdataset_train'
+        test_dir = 'chest_xray_webdataset_test'
+        
+        # Create train and test webdatasets
+        print("Creating train webdataset...")
+        create_webdataset(dataset, train_dir, 'train')
+        
+        print("Creating test webdataset...")
+        create_webdataset(dataset, test_dir, 'test')
+        
+        # Create CSV mappings
+        print("Creating train CSV mapping...")
+        train_csv = create_csv_mapping(train_dir, 'train')
+        
+        print("Creating test CSV mapping...")
+        test_csv = create_csv_mapping(test_dir, 'test')
+    else:
+        train_csv = '/root/train_mapping.csv'
+        test_csv = '/root/test_mapping.csv'
     
     # Get dataset sizes
     train_df = pd.read_csv(train_csv)
